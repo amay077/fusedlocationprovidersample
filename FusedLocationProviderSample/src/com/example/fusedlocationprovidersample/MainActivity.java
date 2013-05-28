@@ -6,6 +6,7 @@ import com.google.android.gms.common.GooglePlayServicesClient.OnConnectionFailed
 import com.google.android.gms.location.LocationClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
+
 import android.location.Location;
 import android.os.Bundle;
 import android.text.format.DateFormat;
@@ -16,33 +17,38 @@ import android.widget.TextView;
 import android.app.Activity;
 
 public class MainActivity extends Activity {
-
+	
+	// FusedLocationProvider 用の Client
 	private LocationClient _locationClient;
 	private TextView _textResult;
-    private final LocationListener _locationListener = new LocationListener() {
-		
-		@Override
-		public void onLocationChanged(final Location location) {
-			MainActivity.this.runOnUiThread(new Runnable() {
-				@Override
-				public void run() {
-					String text = _textResult.getText().toString();
-		            text = DateFormat.format("hh:mm:ss.sss", location.getTime()) + " - " 
-		                    + location.getLatitude() + "/" +
-		                    + location.getLongitude() + "/" +
-		                    + location.getAccuracy() + 
-		                    "\n" + text;
-
-		            _textResult.setText(text);
-				}
-			});
-		}
-	};
 	
+	// 以前と変わらない LocationListener
+    private LocationListener _locationListener = null; 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+		
+		_locationListener = new LocationListener() {
+				
+				@Override
+				public void onLocationChanged(final Location location) {
+					MainActivity.this.runOnUiThread(new Runnable() {
+						@Override
+						public void run() {
+							String text = _textResult.getText().toString();
+				            text = DateFormat.format("hh:mm:ss.sss", location.getTime()) + " - " 
+				                    + location.getLatitude() + "/" +
+				                    + location.getLongitude() + "/" +
+				                    + location.getAccuracy() + 
+				                    "\n" + text;
+
+				            _textResult.setText(text);
+						}
+					});
+				}
+			};
+
 		
 		_textResult = (TextView)findViewById(R.id.text_result);
 		
@@ -76,9 +82,10 @@ public class MainActivity extends Activity {
 
 			@Override
             public void onConnected(Bundle bundle) {
-            	LocationRequest request = new LocationRequest();
-            	request.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-            	request.setInterval(5000); // 5秒おき
+				// 2. 位置の取得開始！
+				LocationRequest request = LocationRequest.create()
+				.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
+				.setInterval(5000); // 5秒おき
             	_locationClient.requestLocationUpdates(request, _locationListener);
             }
 
@@ -93,6 +100,7 @@ public class MainActivity extends Activity {
             }
         });
 		
+		// 1. 位置取得サービスに接続！
 		_locationClient.connect();
 	}
 
@@ -103,5 +111,6 @@ public class MainActivity extends Activity {
 		
 		_locationClient.removeLocationUpdates(_locationListener);
 		_locationClient.disconnect();
+//		 ConnectionCallbacks.onDisconnected が呼ばれるまで待った方がいい気がする
 	}
 }
